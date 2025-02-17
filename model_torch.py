@@ -11,8 +11,10 @@ from read_data import ChestXrayDataSet
 N_CLASSES = 14
 CLASS_NAMES = [ 'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
                 'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia']
-DATA_DIR = './ChestX-ray14/images'
+#DATA_DIR = './ChestX-ray14/images'
+DATA_DIR = '/home/guru/data/chexray-14/images/'
 TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
+TEST_IMAGE_LIST = '/ChestX-ray14/labels/test_list.txt'
 VAL_IMAGE_LIST = './ChestX-ray14/labels/val_list.txt'
 TRAIN_IMAGE_LIST = './ChestX-ray14/labels/train_list.txt'
 BATCH_SIZE = 8
@@ -59,7 +61,8 @@ optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999))
 # Learning rate scheduler
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=1, verbose=True)
 
-def train_model(model, train_loader, eval_loader, criterion, optimizer, scheduler, num_epochs=10):
+def train_model(model, train_loader, eval_loader, criterion, optimizer, scheduler, num_epochs=10, save_path="chexnet_model.pth"):
+    best_val_loss = float("inf")
     for epoch in range(num_epochs):
         model.train()
         running_loss = 0.0

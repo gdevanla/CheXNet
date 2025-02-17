@@ -6,6 +6,7 @@ The main CheXNet model implementation.
 
 
 import os
+import re
 import numpy as np
 import torch
 import torch.nn as nn
@@ -21,9 +22,10 @@ CKPT_PATH = 'model.pth.tar'
 N_CLASSES = 14
 CLASS_NAMES = [ 'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
                 'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia']
-DATA_DIR = './ChestX-ray14/images'
+#DATA_DIR = './ChestX-ray14/images'
+DATA_DIR = '/home/guru/data/chexray-14/images'
 TEST_IMAGE_LIST = './ChestX-ray14/labels/test_list.txt'
-BATCH_SIZE = 64
+BATCH_SIZE = 8
 
 
 def main():
@@ -34,10 +36,36 @@ def main():
     model = DenseNet121(N_CLASSES).cuda()
     model = torch.nn.DataParallel(model).cuda()
 
+    norm_pattern = r'norm\.(\d+)\.'
+    norm_replacement = r'norm\1.'
+
+    conv_pattern = r'conv\.(\d+)\.'
+    conv_replacement = r'conv\1.'
+
+    # Remove 'module.' prefix from state_dict keys
     if os.path.isfile(CKPT_PATH):
         print("=> loading checkpoint")
         checkpoint = torch.load(CKPT_PATH)
-        model.load_state_dict(checkpoint['state_dict'])
+
+        checkpoint_state_dict = checkpoint['state_dict']
+        new_state_dict = {}
+        for key, value in checkpoint_state_dict.items():
+            new_key = key # .replace('module.', '')  # Remove 'module.' from each key
+            # Applying the regex substitution
+            new_key = re.sub(norm_pattern, norm_replacement, new_key)
+            new_key = re.sub(conv_pattern, conv_replacement, new_key)
+
+            new_state_dict[new_key] = value
+        #model.load_state_dict(new_state_dict)
+
+        missing_keys, unexpected_keys = model.load_state_dict(new_state_dict, strict=False)
+        # Report missing/unexpected keys
+        print(f"Missing keys: {missing_keys[:5]}")
+        print(f"Unexpected keys: {unexpected_keys[:5]}")
+        if missing_keys or unexpected_keys:
+            print("Fix missing key/unexpected key error")
+            return None
+
         print("=> loaded checkpoint")
     else:
         print("=> no checkpoint found")
@@ -75,6 +103,12 @@ def main():
         output = model(input_var)
         output_mean = output.view(bs, n_crops, -1).mean(1)
         pred = torch.cat((pred, output_mean.data), 0)
+        if i % 10 == 0:
+            print(f'processing {i}')
+
+    import pandas as pd
+    pd.DataFrame(gt.cpu().numpy()).to_csv('./gt.txt')
+    pd.DataFrame(pred.cpu().numpy()).to_csv('./pred.txt')
 
     AUROCs = compute_AUCs(gt, pred)
     AUROC_avg = np.array(AUROCs).mean()
