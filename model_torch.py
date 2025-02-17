@@ -92,6 +92,12 @@ def train_model(model, train_loader, eval_loader, criterion, optimizer, schedule
         # Adjust learning rate based on validation loss
         scheduler.step(avg_val_loss)
 
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            torch.save(model.state_dict(), save_path)
+            print(f"Model saved at epoch {epoch+1} with validation loss {avg_val_loss:.4f}")
+
+
     print("Training complete")
 
 # Train the model
