@@ -53,3 +53,21 @@ class ChestXrayDataSet(Dataset):
     def __len__(self):
         return len(self.image_names)
 
+
+
+# # Define the dataset class (replace with actual dataset loading logic)
+# class ChestXRayDataset(Dataset):
+#     def __init__(self, image_paths, labels, transform=None):
+#         self.image_paths = image_paths
+#         self.labels = labels
+#         self.transform = transform
+
+#     def __len__(self):
+#         return len(self.image_paths)
+
+#     def __getitem__(self, idx):
+#         image = Image.open(self.image_paths[idx]).convert('RGB')
+#         if self.transform:
+#             image = self.transform(image)
+#         label = torch.tensor(self.labels[idx], dtype=torch.float32)
+#         return image, label
